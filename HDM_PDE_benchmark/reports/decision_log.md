@@ -1,0 +1,23 @@
+# Decision log
+
+- 2026-06-04T02:22:17: Main benchmark uses external benchmark source files converted to processed NPZ subsets.
+- KNO configs are forced to `num_kernel_heads: 1`.
+- Poisson is excluded from the active benchmark grid; Diffusion-Reaction and Wave-Gauss are included.
+- MHLKNO_LINATTN_ablation is treated as an independent model with RFF:Chebyshev/Taylor feature split 25:75.
+- Allen-Cahn uses the official RPB/CNO `AllenCahn_64x64_IN.h5` in-distribution split (train 256, validation 128, test 128).
+- Allen-Cahn `AllenCahn_64x64_OUT.h5` is downloaded and recorded as an available OOD file, but is not mixed into the main comparable benchmark table.
+- Allen-Cahn execution order is KNO(head=1), FNO, MHLKNO, MHLKNO_LINATTN, then MHLKNO_LINATTN_ablation so KNO establishes the feasible 2D setting first.
+- Compressible NS uses the official PDEBench 2D CFD file `2D_CFD_Rand_M0.1_Eta0.1_Zeta0.1_periodic_128_Train.hdf5` and is recorded under `compressible_ns`.
+- 2D processed resolution target is 64x64; Burgers target points are 256.
+- Each final config requests 10000 epochs. Runs with fewer completed epochs must be treated as incomplete.
+- Final NFE is 200 for Burgers and 200 for 2D PDEs; the benchmark table records the actual NFE per row.
+- Final sampling/evaluation sampler is `euler`; previous adaptive Tsit5 rows must not be mixed with this benchmark.
+- Final eval batches are full test for Burgers and 4 for 2D PDEs; subset rows record their sample counts and notes.
+- Hard final benchmark constraints: NFE >= 200 and evaluated test samples >= 64 for every active row.
+- Colab wall-clock control: each epoch uses at most 1 shuffled training batches. This is reported as stochastic-epoch training, not a full data pass per epoch.
+- Legacy `ckpt_best_val.pth` files from the pre-Euler run are treated as Tsit5-selected and are not used as final best-validation checkpoints.
+- Euler best-validation checkpoint selection is recomputed from stored periodic checkpoints on the validation split using physical relative L2.
+- Periodic checkpoints are stored every 1000 epochs/steps.
+- FNO final rows use the active-sampler best-validation-physical-L2 checkpoint; FNO 10000/9000/8000/7000 checkpoint benchmarks are reported separately.
+- Non-FNO rows benchmark the active-sampler best-validation-physical-L2 checkpoint and the 10000/9000/8000/7000 epoch checkpoints regardless of the FNO score; the lowest physical relative L2 mean becomes final.
+- Every benchmarked checkpoint writes a qualitative sample figure with an absolute-error panel.
